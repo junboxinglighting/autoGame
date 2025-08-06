@@ -82,10 +82,10 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=$DB_NAME
 DB_USER=$DB_USER
-DB_PASSWORD=请修改为你的数据库密码
+DB_PASSWORD=123321
 
 # JWT密钥 - 请修改为随机字符串
-JWT_SECRET=请修改为你的JWT密钥
+JWT_SECRET=FF8VwiljqIFayBTOJJ/xZ+ajIbHDl9HSJYNYucMSLtA
 
 # 应用配置
 APP_NAME=激活码验证系统
