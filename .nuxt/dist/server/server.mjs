@@ -1,0 +1,1 @@
+export { default } from "file:///C:/Users/ql/Desktop/activation-code-system/activation-code-system/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"

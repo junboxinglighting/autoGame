@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自定义样式 */
+.loading-spinner {
+  @apply animate-spin h-5 w-5 text-white;
+}
+
+/* 表格样式 */
+.table-auto {
+  @apply min-w-full divide-y divide-gray-200;
+}
+
+.table-auto thead {
+  @apply bg-gray-50;
+}
+
+.table-auto th {
+  @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+}
+
+.table-auto td {
+  @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+}
+
+/* 状态标签样式 */
+.status-badge {
+  @apply inline-flex px-2 py-1 text-xs font-semibold rounded-full;
+}
+
+.status-badge.unused {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-badge.activated {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-badge.expired {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-badge.revoked {
+  @apply bg-red-100 text-red-800;
+}
+
+/* 按钮样式 */
+.btn {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply btn text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500;
+}
+
+.btn-secondary {
+  @apply btn text-gray-700 bg-white border-gray-300 hover:bg-gray-50 focus:ring-blue-500;
+}
+
+.btn-danger {
+  @apply btn text-white bg-red-600 hover:bg-red-700 focus:ring-red-500;
+}
+
+.btn-success {
+  @apply btn text-white bg-green-600 hover:bg-green-700 focus:ring-green-500;
+}
+
+/* 表单样式 */
+.form-input {
+  @apply shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md;
+}
+
+.form-select {
+  @apply shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md;
+}
+
+.form-textarea {
+  @apply shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md;
+}
+
+/* 卡片样式 */
+.card {
+  @apply bg-white overflow-hidden shadow rounded-lg;
+}
+
+.card-header {
+  @apply px-4 py-5 sm:px-6 border-b border-gray-200;
+}
+
+.card-body {
+  @apply px-4 py-5 sm:p-6;
+}
+
+.card-footer {
+  @apply px-4 py-4 sm:px-6 bg-gray-50;
+}
+
+/* 分页样式 */
+.pagination {
+  @apply flex items-center justify-between;
+}
+
+.pagination-info {
+  @apply text-sm text-gray-700;
+}
+
+.pagination-nav {
+  @apply relative z-0 inline-flex rounded-md shadow-sm -space-x-px;
+}
+
+.pagination-nav a,
+.pagination-nav span {
+  @apply relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50;
+}
+
+.pagination-nav .current {
+  @apply z-10 bg-blue-50 border-blue-500 text-blue-600;
+}
+
+/* 响应式隐藏/显示 */
+@media (max-width: 640px) {
+  .hidden-mobile {
+    @apply hidden;
+  }
+}
+
+@media (min-width: 641px) {
+  .show-mobile {
+    @apply hidden;
+  }
+}
