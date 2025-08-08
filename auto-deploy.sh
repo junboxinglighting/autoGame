@@ -1327,13 +1327,196 @@ EOF
 
 # 配置Nginx
 setup_nginx() {
-    log "配置Nginx反向代理..."
+    log "配置Nginx反向代理（优化域名处理）..."
     
-    # 创建Nginx配置
-    cat > "/etc/nginx/sites-available/$SERVICE_NAME" << EOF
+    # 域名优化处理
+    local domain="${DOMAIN:-localhost}"
+    local root_domain
+    local config_name="$SERVICE_NAME"
+    
+    # 如果域名以www开头，提取根域名用于配置优化
+    if [[ "$domain" == www.* ]]; then
+        root_domain="${domain#www.}"
+        config_name="${root_domain//./-}"
+    else
+        root_domain="$domain"
+        config_name="${domain//./-}"
+        # 如果不是localhost且不以www开头，建议使用www
+        if [[ "$domain" != "localhost" ]]; then
+            domain="www.$domain"
+        fi
+    fi
+    
+    # 创建优化的Nginx配置
+    if [[ "$domain" == "www.ymzxjb.top" ]]; then
+        log "检测到ymzxjb.top域名，应用特别优化配置..."
+        
+        cat > "/etc/nginx/sites-available/$config_name" << EOF
+# www.ymzxjb.top 激活码管理系统配置
+
+# 根域名重定向到www子域名
 server {
     listen 80;
-    server_name ${DOMAIN:-localhost};
+    server_name $root_domain;
+    return 301 http://www.$root_domain\$request_uri;
+}
+
+# 主配置 - www子域名
+server {
+    listen 80;
+    server_name $domain;
+    
+    # 安全头设置
+    add_header X-Frame-Options DENY always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    
+    # 日志配置
+    access_log /var/log/nginx/${config_name}_access.log;
+    error_log /var/log/nginx/${config_name}_error.log warn;
+    
+    # 请求大小限制
+    client_max_body_size 10M;
+    
+    # 主应用反向代理
+    location / {
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$server_name;
+        proxy_cache_bypass \$http_upgrade;
+        
+        # 优化超时设置
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # 缓冲优化
+        proxy_buffering on;
+        proxy_buffer_size 8k;
+        proxy_buffers 8 8k;
+        proxy_busy_buffers_size 16k;
+        
+        # 错误处理
+        proxy_intercept_errors on;
+        error_page 502 503 504 /50x.html;
+    }
+    
+    # API接口优化
+    location /api/ {
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # API专用超时
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+        
+        # 禁用API缓存
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+    
+    # 管理界面
+    location /admin {
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # 管理界面安全
+        add_header X-Frame-Options "SAMEORIGIN";
+    }
+    
+    # 静态资源优化
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_set_header Host \$host;
+        
+        # 长期缓存
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header Vary "Accept-Encoding";
+        
+        # 压缩设置
+        gzip on;
+        gzip_vary on;
+        gzip_comp_level 6;
+        gzip_types
+            text/css
+            application/javascript
+            application/json
+            image/svg+xml
+            font/woff
+            font/woff2;
+    }
+    
+    # 健康检查端点
+    location /health {
+        proxy_pass http://127.0.0.1:$PORT/health;
+        proxy_set_header Host \$host;
+        access_log off;
+        
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 5s;
+        proxy_read_timeout 5s;
+    }
+    
+    # 安全 - 禁止访问敏感文件
+    location ~ /\.(git|env|config) {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    
+    location ~ /(node_modules|\.nuxt|\.output) {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    
+    # 错误页面
+    location = /50x.html {
+        root /usr/share/nginx/html;
+        internal;
+    }
+    
+    # 全局Gzip
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+}
+EOF
+    else
+        # 通用配置（适用于其他域名）
+        cat > "/etc/nginx/sites-available/$config_name" << EOF
+server {
+    listen 80;
+    server_name $domain;
     
     # 安全头
     add_header X-Frame-Options DENY;
@@ -1341,8 +1524,8 @@ server {
     add_header X-XSS-Protection "1; mode=block";
     
     # 日志
-    access_log /var/log/nginx/${SERVICE_NAME}_access.log;
-    error_log /var/log/nginx/${SERVICE_NAME}_error.log;
+    access_log /var/log/nginx/${config_name}_access.log;
+    error_log /var/log/nginx/${config_name}_error.log;
     
     # 反向代理到Node.js应用
     location / {
@@ -1363,23 +1546,40 @@ server {
     }
     
     # 静态文件缓存
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)\$ {
+        proxy_pass http://127.0.0.1:$PORT;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
     
     # 健康检查
     location /health {
+        proxy_pass http://127.0.0.1:$PORT/health;
         access_log off;
-        return 200 "healthy\n";
-        add_header Content-Type text/plain;
     }
 }
 EOF
+    fi
     
     # 启用站点
-    if [ ! -f "/etc/nginx/sites-enabled/$SERVICE_NAME" ]; then
-        ln -s "/etc/nginx/sites-available/$SERVICE_NAME" "/etc/nginx/sites-enabled/"
+    SERVICE_CONFIG_NAME="$config_name"
+    
+    # 启用站点配置
+    if [ -d "/etc/nginx/sites-enabled" ]; then
+        # Ubuntu/Debian方式
+        if [ -f "/etc/nginx/sites-enabled/default" ]; then
+            rm -f /etc/nginx/sites-enabled/default
+            log "已移除默认站点"
+        fi
+        
+        ln -sf "/etc/nginx/sites-available/$SERVICE_CONFIG_NAME" "/etc/nginx/sites-enabled/"
+        log "已启用站点配置: $SERVICE_CONFIG_NAME"
+    else
+        # CentOS/RHEL方式
+        if ! grep -q "include /etc/nginx/sites-available/$SERVICE_CONFIG_NAME" /etc/nginx/nginx.conf; then
+            echo "include /etc/nginx/sites-available/$SERVICE_CONFIG_NAME;" >> /etc/nginx/nginx.conf
+            log "已添加配置到nginx.conf"
+        fi
     fi
     
     # 测试配置
@@ -1502,7 +1702,7 @@ show_deployment_info() {
     cat << EOF
 
 ╔══════════════════════════════════════════════════════════════╗
-║                    部署成功！                                ║
+║                    部署成功！                                 ║
 ╚══════════════════════════════════════════════════════════════╝
 
 应用信息:
