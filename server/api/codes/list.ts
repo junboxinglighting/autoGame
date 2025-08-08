@@ -15,17 +15,8 @@ export default defineEventHandler(async (event): Promise<ApiResponse<PaginationR
       })
     }
 
-    // 验证认证 - 更宽松的检查
-    const token = getHeader(event, 'authorization')?.replace('Bearer ', '') || ''
-    console.log('收到的令牌:', token.substring(0, 20) + '...')
-    
-    if (!token) {
-      console.log('未提供认证令牌')
-      throw createError({
-        statusCode: 401,
-        statusMessage: '未提供认证令牌'
-      })
-    }
+    // 验证认证 - 已移除，改为无认证模式
+    console.log('无认证模式 - 直接处理请求')
 
     // 解析查询参数
     const query = getQuery(event) as CodeQueryParams

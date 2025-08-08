@@ -24,14 +24,8 @@ declare module "nitropack/types" {
     '/api/codes/generate': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/codes/generate').default>>>>
     }
-    '/api/codes/list-test': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/codes/list-test').default>>>>
-    }
     '/api/codes/list': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/codes/list').default>>>>
-    }
-    '/api/codes/query': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/codes/query').default>>>>
     }
     '/api/codes/validate-simple': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/codes/validate-simple').default>>>>
@@ -41,12 +35,6 @@ declare module "nitropack/types" {
     }
     '/api/codes/validate': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/codes/validate').default>>>>
-    }
-    '/api/login': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/login').default>>>>
-    }
-    '/api/payment/process': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/payment/process').default>>>>
     }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/handlers/renderer').default>>>>

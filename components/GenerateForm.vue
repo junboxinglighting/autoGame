@@ -188,15 +188,8 @@ const generateCodes = async () => {
   loading.value = true
   
   try {
-    const token = process.client ? 
-      localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') : 
-      null
-
-    if (!token) {
-      toastStore.addToast('error', '请先登录')
-      await navigateTo('/login')
-      return
-    }
+    // 无认证模式 - 直接调用API
+    console.log('无认证模式：正在生成激活码...')
 
     const requestData: GenerateCodeRequest = {
       count: form.count,
@@ -205,12 +198,9 @@ const generateCodes = async () => {
       userId: form.userId || undefined
     }
 
-    const { data } = await $fetch<{ success: boolean; data: GenerateCodeResponse; message: string }>('/api/admin/generate', {
+    const { data } = await $fetch<{ success: boolean; data: GenerateCodeResponse; message: string }>('/api/codes/generate', {
       method: 'POST',
-      body: requestData,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      body: requestData
     })
 
     if (data) {

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>完整功能测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 8px 16px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>激活码系统完整功能测试</h1>
+    
+    <div class="step">
+        <h2>步骤1: 登录</h2>
+        <button onclick="login()">登录 (admin/admin123)</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="step">
+        <h2>步骤2: 获取激活码列表</h2>
+        <button onclick="fetchCodes()">获取完整列表</button>
+        <div id="codesResult"></div>
+    </div>
+    
+    <div class="step">
+        <h2>步骤3: 测试搜索功能</h2>
+        <button onclick="searchCodes()">搜索未使用的激活码</button>
+        <div id="searchResult"></div>
+    </div>
+    
+    <div class="step">
+        <h2>步骤4: 测试价格格式化</h2>
+        <button onclick="testPriceFormatting()">测试价格显示</button>
+        <div id="priceResult"></div>
+    </div>
+
+    <script>
+        let currentToken = null;
+
+        async function login() {
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentToken = data.data.token;
+                    localStorage.setItem('admin_token', currentToken);
+                    document.getElementById('loginResult').innerHTML = 
+                        '<div class="success">✓ 登录成功，token已保存</div>';
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        '<div class="error">✗ 登录失败: ' + data.message + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    '<div class="error">✗ 登录错误: ' + error.message + '</div>';
+            }
+        }
+
+        async function fetchCodes() {
+            try {
+                const token = currentToken || localStorage.getItem('admin_token');
+                if (!token) {
+                    document.getElementById('codesResult').innerHTML = 
+                        '<div class="error">请先登录</div>';
+                    return;
+                }
+
+                const response = await fetch('/api/codes/list', {
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const items = data.data.items;
+                    document.getElementById('codesResult').innerHTML = 
+                        '<div class="success">✓ 获取成功，数量: ' + items.length + '</div>' +
+                        '<p>第一个激活码数据:</p>' +
+                        '<pre>' + JSON.stringify(items[0], null, 2) + '</pre>';
+                } else {
+                    document.getElementById('codesResult').innerHTML = 
+                        '<div class="error">✗ 获取失败: ' + data.message + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('codesResult').innerHTML = 
+                    '<div class="error">✗ 获取错误: ' + error.message + '</div>';
+            }
+        }
+
+        async function searchCodes() {
+            try {
+                const token = currentToken || localStorage.getItem('admin_token');
+                if (!token) {
+                    document.getElementById('searchResult').innerHTML = 
+                        '<div class="error">请先登录</div>';
+                    return;
+                }
+
+                const response = await fetch('/api/codes/list?status=未使用&page=1&pageSize=5', {
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const items = data.data.items;
+                    document.getElementById('searchResult').innerHTML = 
+                        '<div class="success">✓ 搜索成功，未使用激活码数量: ' + items.length + '</div>' +
+                        '<p>搜索结果示例:</p>' +
+                        '<pre>' + JSON.stringify(items[0], null, 2) + '</pre>';
+                } else {
+                    document.getElementById('searchResult').innerHTML = 
+                        '<div class="error">✗ 搜索失败: ' + data.message + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('searchResult').innerHTML = 
+                    '<div class="error">✗ 搜索错误: ' + error.message + '</div>';
+            }
+        }
+
+        function testPriceFormatting() {
+            // 测试价格格式化函数
+            function formatPrice(price) {
+                if (price === null || price === undefined) return '0.00';
+                const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+                if (isNaN(numPrice)) return '0.00';
+                return numPrice.toFixed(2);
+            }
+
+            const testCases = [
+                { input: 5, expected: '5.00' },
+                { input: '5.50', expected: '5.50' },
+                { input: null, expected: '0.00' },
+                { input: undefined, expected: '0.00' },
+                { input: 'invalid', expected: '0.00' },
+                { input: 0, expected: '0.00' }
+            ];
+
+            let results = [];
+            testCases.forEach(test => {
+                const result = formatPrice(test.input);
+                const success = result === test.expected;
+                results.push(`输入: ${JSON.stringify(test.input)} → 输出: ${result} (${success ? '✓' : '✗ 期望: ' + test.expected})`);
+            });
+
+            document.getElementById('priceResult').innerHTML = 
+                '<div class="success">价格格式化测试:</div>' +
+                '<pre>' + results.join('\n') + '</pre>';
+        }
+    </script>
+</body>
+</html>

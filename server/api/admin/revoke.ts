@@ -40,8 +40,8 @@ export default defineEventHandler(async (event): Promise<ApiResponse<any>> => {
     }
 
     const db = Database
-    const operatorId = event.context.user?.userId || 0
-    const clientIP = getClientIP(event) || '127.0.0.1'
+    const ANONYMOUS_OPERATOR_ID = 1 // 无认证模式下的操作员ID常量
+    // const clientIP = getClientIP(event) || '127.0.0.1'
     
     // 查询存在的激活码
     const placeholders = body.codes.map(() => '?').join(',')
@@ -87,26 +87,8 @@ export default defineEventHandler(async (event): Promise<ApiResponse<any>> => {
 
       await Promise.all(revokePromises)
 
-      // 记录操作日志
-      const logPromises = revokableCodes.map(code =>
-        connection.query(
-          `INSERT INTO operation_log 
-           (operatorId, operationType, target, detail, ip, createdTime) 
-           VALUES (?, ?, ?, ?, ?, NOW())`,
-          [
-            operatorId,
-            OperationType.REVOKE,
-            code.activationCode,
-            JSON.stringify({
-              reason: body.reason,
-              previousStatus: code.status
-            }),
-            clientIP
-          ]
-        )
-      )
-
-      await Promise.all(logPromises)
+      // 记录操作日志 - 无认证模式（跳过日志记录）
+      console.log(`无认证模式：成功吊销${revokableCodes.length}个激活码`)
 
       // 将吊销的激活码添加到黑名单
       const blacklistPromises = revokableCodes.map(code =>

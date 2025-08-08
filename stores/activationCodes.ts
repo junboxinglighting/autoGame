@@ -46,14 +46,8 @@ export const useActivationCodesStore = defineStore('activationCodes', {
       }
       
       try {
-        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token')
-
-        console.log('Store: 获取到的token:', token ? '存在' : '不存在')
-
-        if (!token) {
-          console.error('Store: 未找到认证令牌')
-          throw new Error('未找到认证令牌')
-        }
+        // 无认证模式 - 直接调用API
+        console.log('Store: 无认证模式，正在获取数据')
 
         const params: CodeQueryParams = {
           page: this.currentPage,
@@ -74,10 +68,7 @@ export const useActivationCodesStore = defineStore('activationCodes', {
           message: string
         }>('/api/codes/list', {
           method: 'GET',
-          query: params,
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          query: params
         })
 
         if (response.success && response.data) {
@@ -134,13 +125,8 @@ export const useActivationCodesStore = defineStore('activationCodes', {
 
     async revokeCodes(codes: string[], reason: string) {
       try {
-        const token = process.client ? 
-          localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') : 
-          null
-
-        if (!token) {
-          throw new Error('未找到认证令牌')
-        }
+        // 无认证模式 - 直接调用API
+        console.log('Store: 无认证模式，正在吊销激活码')
 
         const response = await $fetch<{
           success: boolean
@@ -151,9 +137,6 @@ export const useActivationCodesStore = defineStore('activationCodes', {
           body: {
             codes,
             reason
-          },
-          headers: {
-            'Authorization': `Bearer ${token}`
           }
         })
 

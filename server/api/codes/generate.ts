@@ -61,26 +61,8 @@ export default defineEventHandler(async (event): Promise<ApiResponse<GenerateCod
 
     await Promise.all(insertPromises)
 
-    // 记录操作日志
-    const operatorId = event.context.user?.userId || 0
-    const clientIP = getClientIP(event)
-    
-    await db.query(
-      `INSERT INTO operation_log 
-       (operatorId, operationType, target, detail, ip, createdTime) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [
-        operatorId,
-        OperationType.GENERATE,
-        `批量生成${body.count}个激活码`,
-        JSON.stringify({
-          count: body.count,
-          price: body.price,
-          expirationDays: body.expirationDays
-        }),
-        clientIP
-      ]
-    )
+    // 记录操作日志 - 无认证模式（跳过日志记录）
+    console.log(`无认证模式：成功生成${codes.length}个激活码`)
 
     return {
       success: true,

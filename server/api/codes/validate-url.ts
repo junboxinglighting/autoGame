@@ -31,16 +31,19 @@ export default defineEventHandler(async (event) => {
       params = await readBody(event)
     }
 
-    // 参数验证
-    if (!params.code || !params.userId || !params.deviceFingerprint || !params.ip) {
+    // 参数验证 - 无认证模式下允许userId为空
+    if (!params.code || !params.deviceFingerprint || !params.ip) {
       throw createError({
         statusCode: 400,
         statusMessage: '参数不完整'
       })
     }
+    
+    // 无认证模式：如果没有提供userId或为null，使用默认用户ID 0
+    const effectiveUserId = params.userId || 0;
 
     // 激活码格式验证（32位字母数字）
-    if (!/^[A-Z0-9]{32}$/.test(params.code)) {
+    if (!/^[A-Z2-9]{16,}$/.test(params.code)) {
       throw createError({
         statusCode: 400,
         statusMessage: '激活码格式无效'
@@ -96,10 +99,10 @@ export default defineEventHandler(async (event) => {
     if (codeInfo.status === '未使用') {
       console.log('🆕 首次激活 - 绑定设备指纹')
       
-      // 更新激活码状态和设备指纹
+      // 更新激活码状态和设备指纹 - 使用有效的用户ID
       await db.query(
         'UPDATE activation_code SET status = ?, deviceFingerprint = ?, userId = ?, activationDate = NOW() WHERE activationCode = ?',
-        ['已激活', params.deviceFingerprint, params.userId, params.code]
+        ['已激活', params.deviceFingerprint, effectiveUserId, params.code]
       )
 
       console.log('✅ 激活成功，设备指纹已绑定:', params.deviceFingerprint)

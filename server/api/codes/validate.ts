@@ -26,12 +26,15 @@ export default defineEventHandler(async (event): Promise<ApiResponse<ValidateCod
       })
     }
 
-    if (!body.userId || !body.deviceFingerprint || !body.ip) {
+    if (!body.deviceFingerprint || !body.ip) {
       throw createError({
         statusCode: 400,
         statusMessage: '缺少必要参数'
       })
     }
+    
+    // 无认证模式：如果没有提供userId或为null，使用默认用户ID 0
+    const effectiveUserId = body.userId || 0;
 
     const db = Database
     
@@ -222,10 +225,10 @@ export default defineEventHandler(async (event): Promise<ApiResponse<ValidateCod
     )
     */
 
-    // 生成授权令牌
+    // 生成授权令牌 - 使用有效的用户ID
     const authToken = TokenGenerator.generateAuthToken(
       body.code,
-      body.userId,
+      effectiveUserId,
       body.deviceFingerprint,
       expiryTime
     )

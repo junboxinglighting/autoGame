@@ -12,8 +12,7 @@ type HydrationStrategies = {
 }
 type LazyComponent<T> = (T & DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }>)
 interface _GlobalComponents {
-      'AdminLayout': typeof import("../components/AdminLayout.vue")['default']
-    'CodeList': typeof import("../components/CodeList.vue")['default']
+      'CodeList': typeof import("../components/CodeList.vue")['default']
     'GenerateForm': typeof import("../components/GenerateForm.vue")['default']
     'Toast': typeof import("../components/Toast.vue")['default']
     'NuxtWelcome': typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']
@@ -40,8 +39,7 @@ interface _GlobalComponents {
     'Body': typeof import("../node_modules/nuxt/dist/head/runtime/components")['Body']
     'NuxtIsland': typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
     'NuxtRouteAnnouncer': typeof import("../node_modules/nuxt/dist/app/components/server-placeholder")['default']
-      'LazyAdminLayout': LazyComponent<typeof import("../components/AdminLayout.vue")['default']>
-    'LazyCodeList': LazyComponent<typeof import("../components/CodeList.vue")['default']>
+      'LazyCodeList': LazyComponent<typeof import("../components/CodeList.vue")['default']>
     'LazyGenerateForm': LazyComponent<typeof import("../components/GenerateForm.vue")['default']>
     'LazyToast': LazyComponent<typeof import("../components/Toast.vue")['default']>
     'LazyNuxtWelcome': LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
@@ -74,7 +72,6 @@ declare module 'vue' {
   export interface GlobalComponents extends _GlobalComponents { }
 }
 
-export const AdminLayout: typeof import("../components/AdminLayout.vue")['default']
 export const CodeList: typeof import("../components/CodeList.vue")['default']
 export const GenerateForm: typeof import("../components/GenerateForm.vue")['default']
 export const Toast: typeof import("../components/Toast.vue")['default']
@@ -102,7 +99,6 @@ export const Html: typeof import("../node_modules/nuxt/dist/head/runtime/compone
 export const Body: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Body']
 export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
 export const NuxtRouteAnnouncer: typeof import("../node_modules/nuxt/dist/app/components/server-placeholder")['default']
-export const LazyAdminLayout: LazyComponent<typeof import("../components/AdminLayout.vue")['default']>
 export const LazyCodeList: LazyComponent<typeof import("../components/CodeList.vue")['default']>
 export const LazyGenerateForm: LazyComponent<typeof import("../components/GenerateForm.vue")['default']>
 export const LazyToast: LazyComponent<typeof import("../components/Toast.vue")['default']>

@@ -93,15 +93,33 @@ export async function initDatabase(): Promise<Database> {
   const config = useRuntimeConfig()
   const db = Database.getInstance()
   
-  await db.connect({
-    host: config.dbHost,
-    port: parseInt(config.dbPort),
-    user: config.dbUser,
-    password: config.dbPassword,
-    database: config.dbName
-  })
-
-  return db
+  try {
+    console.log('正在初始化数据库连接...')
+    await db.connect({
+      host: config.dbHost,
+      port: parseInt(config.dbPort),
+      user: config.dbUser,
+      password: config.dbPassword,
+      database: config.dbName
+    })
+    return db
+  } catch (error) {
+    console.error('数据库连接失败:', error)
+    console.log('🔄 切换到模拟数据库模式')
+    
+    // 导入并使用模拟数据库
+    const { MockDatabase } = await import('./mockDatabase')
+    const mockDb = MockDatabase.getInstance()
+    await mockDb.connect()
+    
+    // 返回一个适配器让MockDatabase兼容Database接口
+    return {
+      query: mockDb.query.bind(mockDb),
+      queryOne: mockDb.queryOne.bind(mockDb),
+      transaction: mockDb.transaction.bind(mockDb),
+      close: mockDb.close.bind(mockDb)
+    } as any
+  }
 }
 
 export { Database }

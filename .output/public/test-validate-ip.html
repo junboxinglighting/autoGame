@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>激活码验证测试 - IP验证功能</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 300px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; background-color: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #005a87; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .scenario { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 4px; }
+        .scenario h3 { margin-top: 0; color: #333; }
+    </style>
+</head>
+<body>
+    <h1>激活码验证测试 - IP验证功能</h1>
+    
+    <div class="scenario">
+        <h3>测试场景 1: 首次验证激活码</h3>
+        <div class="form-group">
+            <label for="code1">激活码:</label>
+            <input type="text" id="code1" placeholder="输入激活码">
+        </div>
+        <div class="form-group">
+            <label for="userId1">用户ID:</label>
+            <input type="number" id="userId1" value="1001">
+        </div>
+        <div class="form-group">
+            <label for="deviceFingerprint1">设备指纹:</label>
+            <input type="text" id="deviceFingerprint1" value="device-001">
+        </div>
+        <div class="form-group">
+            <label for="ip1">IP地址:</label>
+            <input type="text" id="ip1" value="192.168.1.100">
+        </div>
+        <button onclick="validateCode(1)">验证激活码</button>
+        <div id="result1" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="scenario">
+        <h3>测试场景 2: 相同IP重复验证</h3>
+        <div class="form-group">
+            <label for="code2">激活码:</label>
+            <input type="text" id="code2" placeholder="输入已激活的激活码">
+        </div>
+        <div class="form-group">
+            <label for="userId2">用户ID:</label>
+            <input type="number" id="userId2" value="1002">
+        </div>
+        <div class="form-group">
+            <label for="deviceFingerprint2">设备指纹:</label>
+            <input type="text" id="deviceFingerprint2" value="device-002">
+        </div>
+        <div class="form-group">
+            <label for="ip2">IP地址:</label>
+            <input type="text" id="ip2" value="192.168.1.100">
+        </div>
+        <button onclick="validateCode(2)">验证激活码 (相同IP)</button>
+        <div id="result2" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="scenario">
+        <h3>测试场景 3: 不同IP验证已激活的码</h3>
+        <div class="form-group">
+            <label for="code3">激活码:</label>
+            <input type="text" id="code3" placeholder="输入已激活的激活码">
+        </div>
+        <div class="form-group">
+            <label for="userId3">用户ID:</label>
+            <input type="number" id="userId3" value="1003">
+        </div>
+        <div class="form-group">
+            <label for="deviceFingerprint3">设备指纹:</label>
+            <input type="text" id="deviceFingerprint3" value="device-003">
+        </div>
+        <div class="form-group">
+            <label for="ip3">IP地址:</label>
+            <input type="text" id="ip3" value="192.168.1.200">
+        </div>
+        <button onclick="validateCode(3)">验证激活码 (不同IP)</button>
+        <div id="result3" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        async function validateCode(scenario) {
+            const code = document.getElementById(`code${scenario}`).value;
+            const userId = document.getElementById(`userId${scenario}`).value;
+            const deviceFingerprint = document.getElementById(`deviceFingerprint${scenario}`).value;
+            const ip = document.getElementById(`ip${scenario}`).value;
+            const resultDiv = document.getElementById(`result${scenario}`);
+            
+            if (!code || !userId || !deviceFingerprint || !ip) {
+                showResult(resultDiv, '请填写所有必填字段', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/codes/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        userId: parseInt(userId),
+                        deviceFingerprint: deviceFingerprint,
+                        ip: ip
+                    })
+                });
+                
+                const result = await response.json();
+                console.log(`测试场景 ${scenario} 结果:`, result);
+                
+                let resultClass = 'error';
+                let message = `状态码: ${result.code || 'N/A'}\\n`;
+                message += `成功: ${result.success}\\n`;
+                message += `消息: ${result.message}\\n`;
+                
+                if (result.data) {
+                    message += `验证结果: ${result.data.valid}\\n`;
+                    message += `状态码: ${result.data.statusCode}\\n`;
+                    message += `详细消息: ${result.data.message}\\n`;
+                    
+                    if (result.data.statusCode === 1) {
+                        resultClass = 'success';
+                        if (result.data.token) {
+                            message += `令牌: ${result.data.token.substring(0, 50)}...\\n`;
+                        }
+                        if (result.data.expiryTime) {
+                            message += `过期时间: ${new Date(result.data.expiryTime).toLocaleString()}\\n`;
+                        }
+                    } else if (result.data.statusCode === 3) {
+                        resultClass = 'warning';
+                    }
+                }
+                
+                showResult(resultDiv, message, resultClass);
+                
+            } catch (error) {
+                showResult(resultDiv, `请求失败: ${error.message}`, 'error');
+                console.error('验证请求失败:', error);
+            }
+        }
+        
+        function showResult(resultDiv, message, type) {
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<pre>${message}</pre>`;
+            resultDiv.style.display = 'block';
+        }
+        
+        // 自动填充测试数据
+        window.onload = function() {
+            // 为场景2和3自动填充相同的激活码
+            document.getElementById('code2').addEventListener('input', function() {
+                document.getElementById('code3').value = this.value;
+            });
+        }
+    </script>
+</body>
+</html>

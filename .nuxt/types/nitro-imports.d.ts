@@ -2,6 +2,7 @@ declare global {
   const BlacklistChecker: typeof import('../../server/utils/blacklistChecker')['BlacklistChecker']
   const CodeGenerator: typeof import('../../server/utils/codeGenerator')['CodeGenerator']
   const Database: typeof import('../../server/utils/database')['Database']
+  const MockDatabase: typeof import('../../server/utils/mockDatabase')['MockDatabase']
   const TokenGenerator: typeof import('../../server/utils/tokenGenerator')['TokenGenerator']
   const __buildAssetsURL: typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/utils/paths')['buildAssetsURL']
   const __publicAssetsURL: typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/utils/paths')['publicAssetsURL']
@@ -89,6 +90,7 @@ declare global {
   const isStream: typeof import('../../node_modules/h3')['isStream']
   const isWebResponse: typeof import('../../node_modules/h3')['isWebResponse']
   const lazyEventHandler: typeof import('../../node_modules/h3')['lazyEventHandler']
+  const mockDatabase: typeof import('../../server/utils/mockDatabase')['default']
   const nitroPlugin: typeof import('../../node_modules/nitropack/dist/runtime/internal/plugin')['nitroPlugin']
   const parseCookies: typeof import('../../node_modules/h3')['parseCookies']
   const promisifyNodeListener: typeof import('../../node_modules/h3')['promisifyNodeListener']
@@ -144,6 +146,9 @@ declare global {
   export type { CodeGenerator } from '../../server/utils/codeGenerator'
   import('../../server/utils/codeGenerator')
   // @ts-ignore
+  export type { MockDatabase } from '../../server/utils/mockDatabase'
+  import('../../server/utils/mockDatabase')
+  // @ts-ignore
   export type { TokenGenerator } from '../../server/utils/tokenGenerator'
   import('../../server/utils/tokenGenerator')
 }
@@ -165,4 +170,5 @@ export { BlacklistChecker } from 'C:/Users/ql/Desktop/activation-code-system/act
 export { getClientIP, getUserAgent, getFullURL, isLocalRequest } from 'C:/Users/ql/Desktop/activation-code-system/activation-code-system/server/utils/clientInfo';
 export { CodeGenerator } from 'C:/Users/ql/Desktop/activation-code-system/activation-code-system/server/utils/codeGenerator';
 export { default as database, initDatabase, Database } from 'C:/Users/ql/Desktop/activation-code-system/activation-code-system/server/utils/database';
+export { default as mockDatabase, MockDatabase } from 'C:/Users/ql/Desktop/activation-code-system/activation-code-system/server/utils/mockDatabase';
 export { TokenGenerator } from 'C:/Users/ql/Desktop/activation-code-system/activation-code-system/server/utils/tokenGenerator';
