@@ -1,11 +1,15 @@
 #!/bin/bash
 
 # ====================================================================
-# 激活码管理系统 - 阿里云自动化部署脚本 (针对 ymzxjb.top 域名)
-# 适用于阿里云ECS服务器
-# 支持root用户和具有sudo权限的普通用户
+# 激活码管理系统 - 阿里云自动化部署脚本 (IP地址直接访问版本)
+# 适用于阿里云ECS服务器（已预置admin和root用户）
+# 从GitHub拉取代码进行部署，不配置特定域名
 # 作者: GitHub Copilot
 # ====================================================================
+
+# 配置变量
+GITHUB_REPO="https://github.com/junboxinglighting/autoGame"  # 替换为实际的仓库地址
+BRANCH="main"  # 默认分支
 
 # 颜色定义
 RED='\033[0;31m'
@@ -39,11 +43,11 @@ check_permissions() {
         CURRENT_USER="root"
         log "以root用户身份运行"
     else
-        # 检查是否有sudo权限
+        # 检查是否有sudo权限（阿里云通常预置admin用户具有sudo权限）
         if sudo -l >/dev/null 2>&1; then
             SUDO="sudo"
             CURRENT_USER=$(whoami)
-            log "以普通用户 $CURRENT_USER 身份运行，使用sudo执行管理命令"
+            log "以用户 $CURRENT_USER 身份运行，使用sudo执行管理命令"
         else
             log_error "当前用户无root权限且无sudo权限，无法执行部署"
             exit 1
@@ -81,9 +85,9 @@ update_system() {
 install_dependencies() {
     log "安装必要软件..."
     if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
-        $SUDO apt install -y curl wget gnupg ca-certificates lsb-release nginx mysql-server nodejs npm
+        $SUDO apt install -y curl wget gnupg ca-certificates lsb-release nginx mysql-server nodejs npm git
     elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Red Hat"* ]] || [[ $OS == *"AlmaLinux"* ]] || [[ $OS == *"Rocky"* ]]; then
-        $SUDO yum install -y curl wget gnupg nginx mysql-server
+        $SUDO yum install -y curl wget gnupg nginx mysql-server git
         # 在CentOS上安装Node.js
         curl -fsSL https://rpm.nodesource.com/setup_lts.x | $SUDO bash -
         $SUDO yum install -y nodejs
@@ -128,15 +132,16 @@ install_pm2() {
 
 # 部署应用
 deploy_application() {
-    log "部署应用..."
+    log "从GitHub拉取并部署应用..."
     
     # 创建应用目录
     $SUDO mkdir -p /opt/activation-code-system
     $SUDO chown $CURRENT_USER:$CURRENT_USER /opt/activation-code-system
     cd /opt/activation-code-system
     
-    # 克隆或复制应用代码（这里假设代码已上传到服务器）
-    # git clone <repository-url> .
+    # 从GitHub克隆代码
+    log "从 $GITHUB_REPO 拉取代码..."
+    git clone -b $BRANCH $GITHUB_REPO .
     
     # 安装依赖
     npm install --production
@@ -214,20 +219,21 @@ EOF
 configure_nginx() {
     log "配置Nginx..."
     
-    # 创建Nginx配置文件
-    $SUDO tee /etc/nginx/sites-available/ymzxjb.top > /dev/null << 'EOF'
+    # 创建Nginx配置文件（基于IP地址的配置）
+    $SUDO tee /etc/nginx/sites-available/default > /dev/null << 'EOF'
 server {
-    listen 80;
-    server_name ymzxjb.top www.ymzxjb.top;
-    
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
     # 安全头
     add_header X-Frame-Options DENY;
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
     
     # 日志
-    access_log /var/log/nginx/ymzxjb.top_access.log;
-    error_log /var/log/nginx/ymzxjb.top_error.log;
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
     
     # 反向代理到Node.js应用
     location / {
@@ -262,8 +268,11 @@ server {
 }
 EOF
     
-    # 启用站点
-    $SUDO ln -sf /etc/nginx/sites-available/ymzxjb.top /etc/nginx/sites-enabled/
+    # 启用默认站点配置
+    $SUDO ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
+    
+    # 移除可能存在的其他站点配置
+    $SUDO rm -f /etc/nginx/sites-enabled/ymzxjb.top
     
     # 测试并重新加载Nginx
     $SUDO nginx -t && $SUDO systemctl reload nginx
@@ -305,8 +314,6 @@ show_completion() {
     log_success "激活码管理系统部署完成！"
     log_success "==========================================="
     log_success "访问地址："
-    log_success "  - http://ymzxjb.top"
-    log_success "  - http://www.ymzxjb.top"
     log_success "  - http://$PUBLIC_IP"
     log_success ""
     log_success "管理命令："
@@ -314,11 +321,6 @@ show_completion() {
     log_success "  - 查看日志: pm2 logs"
     log_success "  - 重启应用: pm2 restart activation-code-system"
     log_success "  - 停止应用: pm2 stop activation-code-system"
-    log_success ""
-    log_success "重要提醒："
-    log_success "1. 请在域名注册商处将 ymzxjb.top 和 www.ymzxjb.top 解析到 $PUBLIC_IP"
-    log_success "2. 如需配置SSL证书，可使用 Let's Encrypt:"
-    log_success "   sudo certbot --nginx -d ymzxjb.top -d www.ymzxjb.top"
     log_success "==========================================="
 }
 
