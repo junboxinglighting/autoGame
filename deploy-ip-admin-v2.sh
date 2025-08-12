@@ -1,5 +1,5 @@
 #!/bin/bash
-# 适配admin用户+IP访问的自动部署脚本
+# 适配admin用户+IP访问的自动部署脚本（修正版，解决nodejs/npm冲突、权限、依赖等问题）
 # 服务器IP: 8.148.184.5
 # 仅支持admin用户，无域名、无SSL
 
@@ -11,14 +11,13 @@ SERVICE_NAME="activation-code-system"
 APP_USER="admin"
 PROJECT_DIR="/opt/$PROJECT_NAME"
 LOG_FILE="/var/log/$PROJECT_NAME/deploy.log"
+REPO_URL="https://github.com/junboxinglighting/autoGame.git"
 
-# 日志函数
 log() {
     mkdir -p "/var/log/$PROJECT_NAME" 2>/dev/null || true
     echo -e "[\033[0;32m$(date +'%Y-%m-%d %H:%M:%S')\033[0m] $1" | tee -a "$LOG_FILE"
 }
 
-# 检查root权限
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         log "此脚本需要root权限运行"
@@ -26,23 +25,36 @@ check_root() {
     fi
 }
 
-# 创建目录
 setup_directories() {
     mkdir -p "$PROJECT_DIR" "$PROJECT_DIR/current" "/var/log/$PROJECT_NAME"
     chown -R $APP_USER:$APP_USER "$PROJECT_DIR" "/var/log/$PROJECT_NAME"
 }
 
-# 安装依赖
-install_dependencies() {
-    apt-get update
-    apt-get install -y curl wget git build-essential nginx nodejs npm
-    npm install -g pm2
+remove_apt_node_npm() {
+    log "卸载系统自带nodejs和npm..."
+    apt-get remove -y nodejs npm || true
 }
 
-# 拉取/更新代码
+install_node18() {
+    log "安装Node.js 18.x..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+    node -v
+    npm -v
+    log "升级npm到最新版..."
+    npm install -g npm@latest
+    npm config set registry https://registry.npmmirror.com
+}
+
+install_dependencies() {
+    log "安装基础依赖..."
+    apt-get update
+    apt-get install -y curl wget git build-essential nginx
+}
+
 update_code() {
     if [[ ! -d "$PROJECT_DIR/current/.git" ]]; then
-        git clone https://github.com/junboxinglighting/autoGame.git "$PROJECT_DIR/current"
+        git clone "$REPO_URL" "$PROJECT_DIR/current"
     else
         cd "$PROJECT_DIR/current"
         git pull
@@ -50,13 +62,15 @@ update_code() {
     chown -R $APP_USER:$APP_USER "$PROJECT_DIR/current"
 }
 
-# 安装Node依赖
 install_node_modules() {
     cd "$PROJECT_DIR/current"
-    sudo -u $APP_USER npm install --cache=/tmp/.npm-cache
+    rm -rf node_modules package-lock.json
+    sudo -u $APP_USER npm install
+    sudo chown -R $APP_USER:$APP_USER node_modules
+    chmod -R 755 node_modules
+    chmod -R 755 node_modules/.bin || true
 }
 
-# 配置环境变量
 setup_env() {
     cat > "$PROJECT_DIR/current/.env.production" << EOF
 NODE_ENV=production
@@ -74,16 +88,14 @@ EOF
     chmod 600 "$PROJECT_DIR/current/.env.production"
 }
 
-# 配置PM2
 setup_pm2() {
     cd "$PROJECT_DIR/current"
     sudo -u $APP_USER pm2 delete $SERVICE_NAME 2>/dev/null || true
-    sudo -u $APP_USER pm2 start app.js --name $SERVICE_NAME
+    sudo -u $APP_USER pm2 start app.js --name $SERVICE_NAME || sudo -u $APP_USER pm2 start .output/server/index.mjs --name $SERVICE_NAME
     sudo -u $APP_USER pm2 save
     pm2 startup systemd -u $APP_USER --hp /home/$APP_USER
 }
 
-# 配置Nginx
 setup_nginx() {
     cp "$PWD/nginx-ip.conf" /etc/nginx/sites-available/$PROJECT_NAME
     ln -sf /etc/nginx/sites-available/$PROJECT_NAME /etc/nginx/sites-enabled/
@@ -94,6 +106,8 @@ main() {
     check_root
     log "开始部署..."
     setup_directories
+    remove_apt_node_npm
+    install_node18
     install_dependencies
     update_code
     install_node_modules
